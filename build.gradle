@@ -32,20 +32,29 @@ runs {
     }
 
     server {
-    systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-    argument '--nogui'          // 注意：去掉了 "program"
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        argument '--nogui'
     }
+}
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
     implementation 'com.google.code.gson:gson:2.10.1'
     annotationProcessor 'org.spongepowered:mixin:0.8.7'
-    annotationProcessor 'com.google.code.gson:gson:2.10.1'
 }
 
-// ========== 资源文件变量替换 ==========
-tasks.withType(ProcessResources).configureEach {
+// 确保 Gson 在编译时对注解处理器可见
+tasks.withType(JavaCompile).configureEach {
+    options.annotationProcessorPath = configurations.annotationProcessor
+    // 将实现依赖也加入编译类路径（以防万一）
+    classpath += configurations.implementation
+}
+
+processResources {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
@@ -63,7 +72,6 @@ tasks.withType(ProcessResources).configureEach {
     }
 }
 
-// ========== JAR Manifest 声明 Mixin 配置 ==========
 jar {
     manifest {
         attributes([
