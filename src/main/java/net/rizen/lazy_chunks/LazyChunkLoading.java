@@ -40,10 +40,6 @@ public class LazyChunkLoading {
     private static int lastProcessed = 0;
     private static boolean lastThrottled = false;
 
-    // TPS
-    private static double lastTps = 20.0;
-    private static int tpsFrameCounter = 0;
-
     public static int getLastPendingTasks() { return lastPendingTasks; }
     public static double getLastWeight() { return lastWeight; }
     public static int getLastFps() { return lastFps; }
@@ -54,44 +50,11 @@ public class LazyChunkLoading {
     public static double getFrameTimeVariance() { return emaFrameVariance; }
     public static double getQueueGrowthRate() { return queueGrowthRate; }
     public static double getLastProcessingTimeMs() { return lastProcessingTimeMs; }
-    public static double getLastTps() { return lastTps; }
 
     private static double getMinimumBudget() {
         LazyChunksConfig config = LazyChunksConfig.getInstance();
         return Math.max(config.weightChunkWithLight,
                Math.max(config.weightLightUpdate, config.weightForgetChunk));
-    }
-
-    private static void maybeUpdateTps() {
-    LazyChunksConfig config = LazyChunksConfig.getInstance();
-    int interval = Math.max(1, config.tpsCheckInterval);
-
-    tpsFrameCounter++;
-    if (tpsFrameCounter >= FRAME_COUNTER_MAX) tpsFrameCounter = 0;
-    if (tpsFrameCounter % interval != 0) return;
-
-    Minecraft mc = Minecraft.getInstance();
-    if (mc.getSingleplayerServer() == null) {
-        lastTps = 20.0;
-        return;
-    }
-    try {
-        // 获取平均每 tick 耗时（纳秒），换算成 TPS
-        double avgTickTimeNs = mc.getSingleplayerServer().getTickTimeAverage();
-        if (avgTickTimeNs > 0) {
-            lastTps = Math.min(20.0, 1_000_000_000.0 / avgTickTimeNs);
-        } else {
-            lastTps = 20.0;
-        }
-    } catch (Exception e) {
-        lastTps = 20.0;
-    }
-}
-
-    private static boolean isTpsThrottling() {
-        LazyChunksConfig config = LazyChunksConfig.getInstance();
-        if (!config.tpsThrottleEnabled) return false;
-        return lastTps < config.tpsThreshold;
     }
 
     private static void sampleFps() {
@@ -108,8 +71,8 @@ public class LazyChunkLoading {
         }
         double prevAvg = emaFrameTime;
         emaFrameTime += EMA_ALPHA * (frameTimeMs - emaFrameTime);
-        double diff = frameTimeMs - prevAvg;
-        emaFrameVariance += EMA_ALPHA * (diff * diff - emaFrameVariance);
+        double diff = frameTimeMs -Avg;
+Variance += EMA_ALPHA * (diff * diff - emaFrameVariance);
     }
 
     public static void recordProcessingTime(double timeMs) {
@@ -201,8 +164,6 @@ public class LazyChunkLoading {
         frameCounter++;
         if (frameCounter >= FRAME_COUNTER_MAX) frameCounter = 0;
 
-        maybeUpdateTps();
-
         Runnable[] tasks = pendingTasks.toArray(new Runnable[0]);
         int taskCount = tasks.length;
         lastPendingTasks = taskCount;
@@ -219,25 +180,7 @@ public class LazyChunkLoading {
             return Integer.MAX_VALUE;
         }
 
-        if (isTpsThrottling()) {
-            cachedMaxWeight = getMinimumBudget();
-            cacheValid = true;
-            cachedFps = smoothedFps;
-            cachedQueueDepth = taskCount;
-            lastThrottled = true;
-            lastBudget = cachedMaxWeight;
-            int limit = getCountForWeight(tasks, cachedMaxWeight);
-            lastProcessed = limit;
-            return limit;
-        }
-
-        int sampleInterval = Math.max(1, config.sampleInterval);
-        boolean shouldSample = (frameCounter % sampleInterval == 0);
-
-        if (shouldSample) {
-            doFullSample(taskCount);
-            if (cachedMaxWeight == Double.MAX_VALUE) {
-                lastThrottled = false;
+        int sampleInterval = Math.max(1Sample lastThrottled = false;
                 lastBudget = totalWeight;
                 lastProcessed = taskCount;
                 return Integer.MAX_VALUE;

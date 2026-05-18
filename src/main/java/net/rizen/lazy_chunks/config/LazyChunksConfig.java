@@ -26,9 +26,6 @@ public class LazyChunksConfig {
     public double weightForgetChunk = 2.6;
     public int sampleInterval = 5;
     public int teleportCheckInterval = 3;
-    public boolean tpsThrottleEnabled = false;
-    public double tpsThreshold = 15.0;
-    public int tpsCheckInterval = 20;
 
     public static LazyChunksConfig getInstance() {
         if (INSTANCE == null) {
@@ -75,12 +72,6 @@ public class LazyChunksConfig {
                         cfg.getIntOrElse("sampleInterval", 5);
                 config.teleportCheckInterval =
                         cfg.getIntOrElse("teleportCheckInterval", 3);
-                config.tpsThrottleEnabled =
-                        cfg.getOrElse("tpsThrottleEnabled", false);
-                config.tpsThreshold =
-                        cfg.<Double>getOrElse("tpsThreshold", 15.0);
-                config.tpsCheckInterval =
-                        cfg.getIntOrElse("tpsCheckInterval", 20);
                 LazyChunksMod.LOGGER.info("Loaded config from {}", CONFIG_PATH);
             } catch (Exception e) {
                 LazyChunksMod.LOGGER.error(
@@ -101,10 +92,6 @@ public class LazyChunksConfig {
         if (c.teleportCheckInterval > 100) c.teleportCheckInterval = 100;
         if (c.teleportProtectionDuration < 20) c.teleportProtectionDuration = 20;
         if (c.teleportProtectionDuration > 600) c.teleportProtectionDuration = 600;
-        if (c.tpsThreshold < 5.0) c.tpsThreshold = 5.0;
-        if (c.tpsThreshold > 20.0) c.tpsThreshold = 20.0;
-        if (c.tpsCheckInterval < 1) c.tpsCheckInterval = 1;
-        if (c.tpsCheckInterval > 200) c.tpsCheckInterval = 200;
     }
 
     public void save() {
@@ -191,24 +178,6 @@ public class LazyChunksConfig {
                     " Frames between teleport checks.\n" +
                     " At 60 FPS: 1 = 60 Hz, 3 = 20 Hz (default), 10 = 6 Hz");
             cfg.set("teleportCheckInterval", teleportCheckInterval);
-
-            cfg.setComment("tpsThrottleEnabled",
-                    "\n\n ---------- TPS throttle (single-player only) ----------");
-            cfg.setComment("tpsThrottleEnabled", cfg.getComment("tpsThrottleEnabled") +
-                    "\n When server TPS drops below threshold, budget is" +
-                    "\n clamped to minimum." +
-                    "\n Only affects single-player (integrated server).");
-            cfg.set("tpsThrottleEnabled", tpsThrottleEnabled);
-
-            cfg.setComment("tpsThreshold",
-                    " TPS threshold. Range 5.0–20.0. Default 15.0.");
-            cfg.set("tpsThreshold", tpsThreshold);
-
-            cfg.setComment("tpsCheckInterval",
-                    " Frames between TPS checks (render frames, not game ticks).\n" +
-                    " At 60 FPS: 20 frames ≈ 3 checks per second.\n" +
-                    " Range 1–200. Default 20.");
-            cfg.set("tpsCheckInterval", tpsCheckInterval);
 
             LazyChunksMod.LOGGER.info("Saved config to {}", CONFIG_PATH);
         } catch (Exception e) {
